@@ -1,0 +1,5 @@
+description: 1602 LCD HD 44780
+
+compatible: "hit,hd44780"
+
+include: i2c-device.yaml

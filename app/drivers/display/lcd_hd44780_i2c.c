@@ -24,14 +24,14 @@ LOG_MODULE_REGISTER(lcd_hd44780, 1);
 //---------------------------------------
 
 /* animation sleep time in msec */
-#define ANIMATION_SLEEPTIME 200
+#define ANIMATION_SLEEPTIME 10
 static char str[2][LCD_NUM_COLS] = {
     {' ', LCD_CHAR_SQRT, '(', '-', '1', ')', '*', LCD_CHAR_PI, LCD_CHAR_INV,
      LCD_CHAR_DIV, LCD_CHAR_MU, '=', '2', LCD_CHAR_IMAG, '+', LCD_CHAR_INF},
     {' ', LCD_CHAR_SQRT, '(', '-', '1', ')', '*', LCD_CHAR_PI, LCD_CHAR_INV,
      LCD_CHAR_DIV, LCD_CHAR_MU, '=', '2', LCD_CHAR_IMAG, '+', LCD_CHAR_INF}};
 
-uint8_t *rotate(uint8_t *input, uint8_t length, bool direction_right) {
+static uint8_t *rotate(uint8_t *input, uint8_t length, bool direction_right) {
   static uint8_t buffer[256] = {};
   if (direction_right) {
     buffer[0] = input[length - 1];
@@ -44,7 +44,7 @@ uint8_t *rotate(uint8_t *input, uint8_t length, bool direction_right) {
 }
 
 static int animation_frames = 0;
-void my_work_handler(struct k_work *work) {
+static void my_work_handler(struct k_work *work) {
   const struct device *lcd = DEVICE_DT_GET(DT_NODELABEL(lcd));
   if (!device_is_ready(lcd)) {
     LOG_ERR("LCD: Device not ready: %d\n", lcd->state->init_res);
@@ -65,7 +65,12 @@ void my_work_handler(struct k_work *work) {
 }
 
 K_WORK_DEFINE(my_work, my_work_handler);
-void my_timer_handler(struct k_timer *unused) { k_work_submit(&my_work); }
+
+// Work queue for executing the draw calls.
+static struct k_work_q display_work_q;
+void my_timer_handler(struct k_timer *unused) { k_work_submit_to_queue(&display_work_q, &my_work); }
+
+K_THREAD_STACK_DEFINE(display_work_stack_area, 2048);
 K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
 
 // Structure for persistent data across LCD transactions.
@@ -84,8 +89,8 @@ struct lcd_config {
 
 #define LCD_START_SLEEP_TIME_MS 50
 #define LCD_CMD_CLEAR_TIME_MS 5
-#define LCD_CMD_SLEEP_TIME_US 50
-#define LCD_EN_STROBE_TIME_US 5
+#define LCD_CMD_SLEEP_TIME_US 50 // Spec sheet says 37us for most comamnds.
+#define LCD_EN_STROBE_TIME_US 1 // Spec sheet says minimum 450ns.
 
 // Display commands (from data sheet).
 #define LCD_CMD_SCREEN_CLEAR (1 << 0)
@@ -105,7 +110,9 @@ struct lcd_config {
 #define LCD_BUSY (1 << 7)
 #define LCD_DEFAULT_OPTIONS 0
 
-void lcd_write_nibble(const struct device *dev, uint8_t data) {
+// Internal helper call to LCD module. Writes one nibble to the device and
+// strobes the enable bit.
+static void lcd_write_nibble(const struct device *dev, uint8_t data) {
   uint8_t buf = data;
   const struct lcd_config *config = dev->config;
   i2c_write_dt(&config->bus, &buf, sizeof(buf));
@@ -122,7 +129,9 @@ void lcd_write_nibble(const struct device *dev, uint8_t data) {
   k_usleep(LCD_CMD_SLEEP_TIME_US);
 }
 
-void lcd_write(const struct device *dev, uint8_t data,
+// Main write call to the LCD. Breaks down the command byte into the two nibble
+// transactions necessary for the four bit interface.
+static void lcd_write(const struct device *dev, uint8_t data,
                uint8_t options_or_mask) {
   const struct lcd_data *state = dev->data;
   uint8_t or_mask = (state->backlight_enabled ? LCD_BL : LCD_DEFAULT_OPTIONS) |
@@ -205,7 +214,10 @@ static int lcd_initialize(const struct device *dev) {
   lcd_display_state_set(dev, LCD_DS_DISPLAY_ON | LCD_DS_CURSOR_OFF |
                                  LCD_DS_BLINK_OFF);
 
-  // And random animation timer because I can!
+  // And random animation because I can!
+  k_work_queue_start(&display_work_q, display_work_stack_area,
+                    K_THREAD_STACK_SIZEOF(display_work_stack_area),
+                    6, NULL);
   k_timer_start(&my_timer, K_SECONDS(1), K_MSEC(ANIMATION_SLEEPTIME));
   return 0;
 }
@@ -214,6 +226,8 @@ static int lcd_initialize(const struct device *dev) {
 // Module Definition
 //---------------------------------------
 static const struct lcd_config lcd_shared_config = {
+  // TODO: See if we can load the right i2c instance from the parent of the LCD
+  // via the device tree vs. picking only the first one.
     .bus = I2C_DT_SPEC_INST_GET(0),
 };
 static struct lcd_data lcd_shared_data;

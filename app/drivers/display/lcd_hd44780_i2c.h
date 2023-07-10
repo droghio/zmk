@@ -66,12 +66,12 @@ void lcd_cursor_pos_set(const struct device *dev, uint8_t row, uint8_t col);
 void lcd_clear(const struct device *dev);
 
 /* Defines for the LCD_CMD_DISPLAY_SWITCH options */
-#define LCD_DS_DISPLAY_ON		(1 << 2)
-#define LCD_DS_DISPLAY_OFF		(0 << 2)
-#define LCD_DS_CURSOR_ON		(1 << 1)
-#define LCD_DS_CURSOR_OFF		(0 << 1)
-#define LCD_DS_BLINK_ON		    (1 << 0)
-#define LCD_DS_BLINK_OFF		(0 << 0)
+#define LCD_DS_DISPLAY_ON (1 << 2)
+#define LCD_DS_DISPLAY_OFF (0 << 2)
+#define LCD_DS_CURSOR_ON (1 << 1)
+#define LCD_DS_CURSOR_OFF (0 << 1)
+#define LCD_DS_BLINK_ON (1 << 0)
+#define LCD_DS_BLINK_OFF (0 << 0)
 /**
  *  @brief Function to change the display state.
  *  @details This function provides the user the ability to change the state

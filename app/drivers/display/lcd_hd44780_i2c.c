@@ -23,7 +23,7 @@ LOG_MODULE_REGISTER(lcd_hd44780, 1);
 // Random Animation
 //---------------------------------------
 
-/* animation sleep time in msec */
+/* animation sleep time in milliseconds */
 #define ANIMATION_SLEEPTIME 10
 static char str[2][LCD_NUM_COLS] = {
     {' ', LCD_CHAR_SQRT, '(', '-', '1', ')', '*', LCD_CHAR_PI, LCD_CHAR_INV,
@@ -45,10 +45,10 @@ static uint8_t *rotate(uint8_t *input, uint8_t length, bool direction_right) {
 
 static int animation_frames = 0;
 static void my_work_handler(struct k_work *work) {
-  const struct device *lcd = DEVICE_DT_GET(DT_NODELABEL(lcd));
-  if (!device_is_ready(lcd)) {
-    LOG_ERR("LCD: Device not ready: %d\n", lcd->state->init_res);
-    return;
+    const struct device *lcd = DEVICE_DT_GET(DT_NODELABEL(lcd));
+    if (!device_is_ready(lcd)) {
+        LOG_ERR("LCD: Device not ready: %d\n", lcd->state->init_res);
+        return;
   }
   int i = animation_frames;
   memcpy(str[0], rotate(str[0], sizeof(str[0]), i < 80), sizeof(str[0]));
@@ -89,7 +89,7 @@ struct lcd_config {
 
 #define LCD_START_SLEEP_TIME_MS 50
 #define LCD_CMD_CLEAR_TIME_MS 5
-#define LCD_CMD_SLEEP_TIME_US 50 // Spec sheet says 37us for most comamnds.
+#define LCD_CMD_SLEEP_TIME_US 50 // Spec sheet says 37us for most commands.
 #define LCD_EN_STROBE_TIME_US 1 // Spec sheet says minimum 450ns.
 
 // Display commands (from data sheet).
@@ -226,8 +226,8 @@ static int lcd_initialize(const struct device *dev) {
 // Module Definition
 //---------------------------------------
 static const struct lcd_config lcd_shared_config = {
-  // TODO: See if we can load the right i2c instance from the parent of the LCD
-  // via the device tree vs. picking only the first one.
+  // TODO: See if we can load the right I2C instance from the parent of the LCD
+  // via the device tree verse picking only the first one.
     .bus = I2C_DT_SPEC_INST_GET(0),
 };
 static struct lcd_data lcd_shared_data;

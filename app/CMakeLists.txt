@@ -90,3 +90,6 @@ target_sources(app PRIVATE src/main.c)
 add_subdirectory(src/display/)
 
 zephyr_cc_option(-Wfatal-errors)
+
+# Custom to support YCM for vim
+set( CMAKE_EXPORT_COMPILE_COMMANDS ON )

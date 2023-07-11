@@ -1,0 +1,8 @@
+# Copyright (c) 2020 The ZMK Contributors
+# SPDX-License-Identifier: MIT
+
+description: Adds support for an RPN style calculator input.
+
+compatible: "zmk,behavior-rpn-calculator"
+
+include: one_param.yaml

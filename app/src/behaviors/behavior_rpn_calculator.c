@@ -6,9 +6,11 @@
 
 #define DT_DRV_COMPAT zmk_behavior_rpn_calculator
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <device.h>
 #include <drivers/behavior.h>
+#include <drivers/lcd_hd44780_i2c.h>
 #include <logging/log.h>
 
 #include <zmk/keys.h>
@@ -17,7 +19,9 @@
 #include <zmk/events/keycode_state_changed.h>
 #include <zmk/behavior.h>
 
-#define RPN_LINE_WIDTH 10
+#include <sys/cbprintf.h>
+
+#define RPN_LINE_WIDTH 17
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -35,9 +39,22 @@ static void update_display(const struct behavior_rpn_calculator_data *rpn_data) 
     int buffer_depth = rpn_data->calculator_state.stack_depth;
     double complex current_frame =
         rpn_data->calculator_state.buffer_stack[buffer_depth ? buffer_depth - 1 : 0];
-    LOG_INF("RPN: %0.3f+%0.3fi [%d/%d]", creal(current_frame), cimag(current_frame), buffer_depth,
-            CALCULATOR_STACK_DEPTH);
-    LOG_INF("RPN: %s", rpn_data->current_line);
+    const struct device *lcd = DEVICE_DT_GET(DT_NODELABEL(lcd));
+    if (!device_is_ready(lcd)) {
+        LOG_ERR("LCD: Device not ready: %d\n", lcd->state->init_res);
+        return;
+    }
+    lcd_clear(lcd);
+    lcd_cursor_pos_set(lcd, 0, 0);
+    char output_buffer[LCD_NUM_COLS + 1] = "";
+    snprintfcb(output_buffer, sizeof(output_buffer), "%0.3g%+0.3gi |%d", creal(current_frame),
+            cimag(current_frame), buffer_depth);
+    LOG_INF("%s", output_buffer);
+    lcd_print(lcd, output_buffer, strlen(output_buffer));
+    lcd_cursor_pos_set(lcd, 1, 0);
+    LOG_INF("%s", rpn_data->current_line);
+    lcd_print(lcd, rpn_data->current_line, strlen(rpn_data->current_line));
+    lcd_cursor_pos_set(lcd, 1, strlen(rpn_data->current_line));
 };
 
 // Update the current entry buffer with the selected digit. Returns false if input was not valid.

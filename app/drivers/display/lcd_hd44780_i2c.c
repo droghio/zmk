@@ -19,59 +19,59 @@
 
 LOG_MODULE_REGISTER(lcd_hd44780, 1);
 
-//---------------------------------------
-// Random Animation
-//---------------------------------------
-
-/* animation sleep time in milliseconds */
-#define ANIMATION_SLEEPTIME 10
-static char str[2][LCD_NUM_COLS] = {
-    {' ', LCD_CHAR_SQRT, '(', '-', '1', ')', '*', LCD_CHAR_PI, LCD_CHAR_INV,
-     LCD_CHAR_DIV, LCD_CHAR_MU, '=', '2', LCD_CHAR_IMAG, '+', LCD_CHAR_INF},
-    {' ', LCD_CHAR_SQRT, '(', '-', '1', ')', '*', LCD_CHAR_PI, LCD_CHAR_INV,
-     LCD_CHAR_DIV, LCD_CHAR_MU, '=', '2', LCD_CHAR_IMAG, '+', LCD_CHAR_INF}};
-
-static uint8_t *rotate(uint8_t *input, uint8_t length, bool direction_right) {
-  static uint8_t buffer[256] = {};
-  if (direction_right) {
-    buffer[0] = input[length - 1];
-    memcpy(buffer + 1, input, length - 1);
-  } else {
-    buffer[length - 1] = input[0];
-    memcpy(buffer, input + 1, length - 1);
-  }
-  return buffer;
-}
-
-static int animation_frames = 0;
-static void my_work_handler(struct k_work *work) {
-    const struct device *lcd = DEVICE_DT_GET(DT_NODELABEL(lcd));
-    if (!device_is_ready(lcd)) {
-        LOG_ERR("LCD: Device not ready: %d\n", lcd->state->init_res);
-        return;
-  }
-  int i = animation_frames;
-  memcpy(str[0], rotate(str[0], sizeof(str[0]), i < 80), sizeof(str[0]));
-  memcpy(str[1], rotate(str[1], sizeof(str[1]), i > 80), sizeof(str[1]));
-  lcd_cursor_pos_set(lcd, 0, 0);
-  lcd_print(lcd, str[0], sizeof(str[0]));
-  lcd_cursor_pos_set(lcd, 1, 0);
-  lcd_print(lcd, str[1], sizeof(str[1]));
-  lcd_cursor_pos_set(lcd, 0, LCD_NUM_COLS - 1);
-  animation_frames++;
-  if (animation_frames > 170) {
-    animation_frames = 0;
-  }
-}
-
-K_WORK_DEFINE(my_work, my_work_handler);
-
-// Work queue for executing the draw calls.
-static struct k_work_q display_work_q;
-void my_timer_handler(struct k_timer *unused) { k_work_submit_to_queue(&display_work_q, &my_work); }
-
-K_THREAD_STACK_DEFINE(display_work_stack_area, 2048);
-K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
+// //---------------------------------------
+// // Random Animation
+// //---------------------------------------
+// 
+// /* animation sleep time in milliseconds */
+// #define ANIMATION_SLEEPTIME 10
+// static char str[2][LCD_NUM_COLS] = {
+//     {' ', LCD_CHAR_SQRT, '(', '-', '1', ')', '*', LCD_CHAR_PI, LCD_CHAR_INV,
+//      LCD_CHAR_DIV, LCD_CHAR_MU, '=', '2', LCD_CHAR_IMAG, '+', LCD_CHAR_INF},
+//     {' ', LCD_CHAR_SQRT, '(', '-', '1', ')', '*', LCD_CHAR_PI, LCD_CHAR_INV,
+//      LCD_CHAR_DIV, LCD_CHAR_MU, '=', '2', LCD_CHAR_IMAG, '+', LCD_CHAR_INF}};
+// 
+// static uint8_t *rotate(uint8_t *input, uint8_t length, bool direction_right) {
+//   static uint8_t buffer[256] = {};
+//   if (direction_right) {
+//     buffer[0] = input[length - 1];
+//     memcpy(buffer + 1, input, length - 1);
+//   } else {
+//     buffer[length - 1] = input[0];
+//     memcpy(buffer, input + 1, length - 1);
+//   }
+//   return buffer;
+// }
+// 
+// static int animation_frames = 0;
+// static void my_work_handler(struct k_work *work) {
+//     const struct device *lcd = DEVICE_DT_GET(DT_NODELABEL(lcd));
+//     if (!device_is_ready(lcd)) {
+//         LOG_ERR("LCD: Device not ready: %d\n", lcd->state->init_res);
+//         return;
+//   }
+//   int i = animation_frames;
+//   memcpy(str[0], rotate(str[0], sizeof(str[0]), i < 80), sizeof(str[0]));
+//   memcpy(str[1], rotate(str[1], sizeof(str[1]), i > 80), sizeof(str[1]));
+//   lcd_cursor_pos_set(lcd, 0, 0);
+//   lcd_print(lcd, str[0], sizeof(str[0]));
+//   lcd_cursor_pos_set(lcd, 1, 0);
+//   lcd_print(lcd, str[1], sizeof(str[1]));
+//   lcd_cursor_pos_set(lcd, 0, LCD_NUM_COLS - 1);
+//   animation_frames++;
+//   if (animation_frames > 170) {
+//     animation_frames = 0;
+//   }
+// }
+// 
+// K_WORK_DEFINE(my_work, my_work_handler);
+// 
+// // Work queue for executing the draw calls.
+// static struct k_work_q display_work_q;
+// void my_timer_handler(struct k_timer *unused) { k_work_submit_to_queue(&display_work_q, &my_work); }
+// 
+// K_THREAD_STACK_DEFINE(display_work_stack_area, 2048);
+// K_TIMER_DEFINE(my_timer, my_timer_handler, NULL);
 
 // Structure for persistent data across LCD transactions.
 struct lcd_data {
@@ -214,11 +214,11 @@ static int lcd_initialize(const struct device *dev) {
   lcd_display_state_set(dev, LCD_DS_DISPLAY_ON | LCD_DS_CURSOR_OFF |
                                  LCD_DS_BLINK_OFF);
 
-  // And random animation because I can!
-  k_work_queue_start(&display_work_q, display_work_stack_area,
-                    K_THREAD_STACK_SIZEOF(display_work_stack_area),
-                    6, NULL);
-  k_timer_start(&my_timer, K_SECONDS(1), K_MSEC(ANIMATION_SLEEPTIME));
+  // // And random animation because I can!
+  // k_work_queue_start(&display_work_q, display_work_stack_area,
+  //                   K_THREAD_STACK_SIZEOF(display_work_stack_area),
+  //                   6, NULL);
+  // k_timer_start(&my_timer, K_SECONDS(1), K_MSEC(ANIMATION_SLEEPTIME));
   return 0;
 }
 
